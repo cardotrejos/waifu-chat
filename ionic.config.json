@@ -1,0 +1,7 @@
+{
+  "name": "avatargf",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
