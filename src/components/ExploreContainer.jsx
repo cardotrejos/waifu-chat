@@ -3,6 +3,7 @@ import { Application, Ticker } from "pixi.js";
 import { Live2DModel } from "pixi-live2d-display-lipsyncpatch/cubism2";
 import audioFile from "/audio.mp3";
 import "./ExploreContainer.css";
+import initialPrompt from '../prompt.json';
 
 const NPCBubble = ({ text, isVisible }) => {
   return (
@@ -26,6 +27,7 @@ const Live2DCanvas = () => {
   const [bubbleText, setBubbleText] = useState("");
   const [userInput, setUserInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState([initialPrompt]);
 
   useEffect(() => {
     if (!canvasRef.current) {
@@ -87,6 +89,11 @@ const Live2DCanvas = () => {
     setUserInput(e.target.value);
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await callOpenAI();
+  };
+
   const callOpenAI = async () => {
     if (!userInput.trim()) return;
 
@@ -100,7 +107,7 @@ const Live2DCanvas = () => {
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
-          messages: [{ role: "user", content: userInput }],
+          messages: [...messages, { role: 'user', content: userInput }],
           max_tokens: 150
         })
       });
@@ -108,6 +115,10 @@ const Live2DCanvas = () => {
       const data = await response.json();
       const aiResponse = data.choices[0].message.content;
 
+      setMessages(prevMessages => [...prevMessages, 
+        { role: 'user', content: userInput },
+        { role: 'assistant', content: aiResponse }
+      ]);
       setBubbleText(aiResponse);
       setBubbleVisible(true);
       setUserInput("");
@@ -136,7 +147,7 @@ const Live2DCanvas = () => {
       <div className="overlay">
         <NPCBubble text={bubbleText} isVisible={bubbleVisible} />
       </div>
-      <div className="chat-input-container">
+      <form onSubmit={handleSubmit} className="chat-input-container">
         <input
           type="text"
           value={userInput}
@@ -145,13 +156,13 @@ const Live2DCanvas = () => {
           className="chat-input"
         />
         <button
-          onClick={callOpenAI}
+          type="submit"
           disabled={!modelLoaded || isLoading}
           className="send-button"
         >
           {isLoading ? "Thinking..." : "Send"}
         </button>
-      </div>
+      </form>
     </div>
   );
 };
